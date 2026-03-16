@@ -1,5 +1,7 @@
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Queue;
+import java.util.LinkedList;
 
 public class BookMyStayApp {
 
@@ -7,7 +9,7 @@ public class BookMyStayApp {
 
         System.out.println("==================================");
         System.out.println("Book My Stay - Hotel Booking App");
-        System.out.println("Version 4.1");
+        System.out.println("Version 5.1");
         System.out.println("==================================");
 
         RoomInventory inventory = new RoomInventory();
@@ -18,8 +20,15 @@ public class BookMyStayApp {
         rooms.add(new SuiteRoom());
 
         RoomSearchService searchService = new RoomSearchService(inventory, rooms);
-
         searchService.displayAvailableRooms();
+
+        BookingRequestQueue bookingQueue = new BookingRequestQueue();
+
+        bookingQueue.addRequest(new Reservation("Rahul", "Single Room"));
+        bookingQueue.addRequest(new Reservation("Anita", "Double Room"));
+        bookingQueue.addRequest(new Reservation("Vikram", "Suite Room"));
+
+        bookingQueue.displayRequests();
     }
 }
 
@@ -104,6 +113,41 @@ class RoomSearchService {
                 System.out.println("Available: " + available);
                 System.out.println();
             }
+        }
+    }
+}
+
+class Reservation {
+
+    String guestName;
+    String roomType;
+
+    Reservation(String guestName, String roomType) {
+        this.guestName = guestName;
+        this.roomType = roomType;
+    }
+
+    void display() {
+        System.out.println("Guest: " + guestName + " requested " + roomType);
+    }
+}
+
+class BookingRequestQueue {
+
+    Queue<Reservation> queue;
+
+    BookingRequestQueue() {
+        queue = new LinkedList<>();
+    }
+
+    void addRequest(Reservation reservation) {
+        queue.add(reservation);
+    }
+
+    void displayRequests() {
+        System.out.println("Booking Requests in Queue:");
+        for (Reservation r : queue) {
+            r.display();
         }
     }
 }
