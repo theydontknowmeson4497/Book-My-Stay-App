@@ -1,4 +1,5 @@
 import java.util.HashMap;
+import java.util.ArrayList;
 
 public class BookMyStayApp {
 
@@ -6,26 +7,19 @@ public class BookMyStayApp {
 
         System.out.println("==================================");
         System.out.println("Book My Stay - Hotel Booking App");
-        System.out.println("Version 3.1");
+        System.out.println("Version 4.1");
         System.out.println("==================================");
-
-        Room single = new SingleRoom();
-        Room doubleRoom = new DoubleRoom();
-        Room suite = new SuiteRoom();
 
         RoomInventory inventory = new RoomInventory();
 
-        single.display();
-        System.out.println("Available: " + inventory.getAvailability(single.type));
-        System.out.println();
+        ArrayList<Room> rooms = new ArrayList<>();
+        rooms.add(new SingleRoom());
+        rooms.add(new DoubleRoom());
+        rooms.add(new SuiteRoom());
 
-        doubleRoom.display();
-        System.out.println("Available: " + inventory.getAvailability(doubleRoom.type));
-        System.out.println();
+        RoomSearchService searchService = new RoomSearchService(inventory, rooms);
 
-        suite.display();
-        System.out.println("Available: " + inventory.getAvailability(suite.type));
-        System.out.println();
+        searchService.displayAvailableRooms();
     }
 }
 
@@ -89,5 +83,27 @@ class RoomInventory {
 
     void updateAvailability(String roomType, int count) {
         inventory.put(roomType, count);
+    }
+}
+
+class RoomSearchService {
+
+    RoomInventory inventory;
+    ArrayList<Room> rooms;
+
+    RoomSearchService(RoomInventory inventory, ArrayList<Room> rooms) {
+        this.inventory = inventory;
+        this.rooms = rooms;
+    }
+
+    void displayAvailableRooms() {
+        for (Room room : rooms) {
+            int available = inventory.getAvailability(room.type);
+            if (available > 0) {
+                room.display();
+                System.out.println("Available: " + available);
+                System.out.println();
+            }
+        }
     }
 }
