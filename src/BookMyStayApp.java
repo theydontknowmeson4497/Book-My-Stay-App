@@ -4,6 +4,8 @@ import java.util.Queue;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 public class BookMyStayApp {
 
@@ -11,7 +13,7 @@ public class BookMyStayApp {
 
         System.out.println("==================================");
         System.out.println("Book My Stay - Hotel Booking App");
-        System.out.println("Version 6.1");
+        System.out.println("Version 7.0 - Add-On Services");
         System.out.println("==================================");
 
         RoomInventory inventory = new RoomInventory();
@@ -32,7 +34,26 @@ public class BookMyStayApp {
         bookingQueue.addRequest(new Reservation("Priya", "Single Room"));
 
         BookingService bookingService = new BookingService(inventory);
-        bookingService.processRequests(bookingQueue);
+        AddOnServiceManager serviceManager = new AddOnServiceManager();
+
+        // Processing requests and handling Add-On Services (Use Case 7)
+        while (bookingQueue.hasRequests()) {
+            Reservation request = bookingQueue.getNextRequest();
+            String allocatedRoomId = bookingService.processSingleRequest(request);
+
+            // If booking was successful, simulate guest selecting add-ons
+            if (allocatedRoomId != null) {
+                if (request.guestName.equals("Rahul")) {
+                    serviceManager.addServiceToReservation(allocatedRoomId, new AddOnService("WiFi", 500));
+                    serviceManager.addServiceToReservation(allocatedRoomId, new AddOnService("Breakfast", 800));
+                } else if (request.guestName.equals("Anita")) {
+                    serviceManager.addServiceToReservation(allocatedRoomId, new AddOnService("Late Checkout", 1200));
+                }
+
+                // Displaying the services and total cost for the guest
+                serviceManager.displayServicesForReservation(allocatedRoomId);
+            }
+        }
     }
 }
 
@@ -164,41 +185,80 @@ class BookingService {
 
     BookingService(RoomInventory inventory) {
         this.inventory = inventory;
-        allocatedRooms = new HashMap<>();
-        roomCounter = 1;
+        this.allocatedRooms = new HashMap<>();
+        this.roomCounter = 1;
     }
 
-    void processRequests(BookingRequestQueue bookingQueue) {
+    // Refactored to process one request and return the ID for service mapping
+    String processSingleRequest(Reservation request) {
+        String roomType = request.roomType;
+        int available = inventory.getAvailability(roomType);
 
-        while (bookingQueue.hasRequests()) {
+        if (available > 0) {
+            String roomId = roomType.replace(" ", "").substring(0,2).toUpperCase() + roomCounter;
+            roomCounter++;
 
-            Reservation request = bookingQueue.getNextRequest();
-            String roomType = request.roomType;
+            allocatedRooms.putIfAbsent(roomType, new HashSet<>());
+            Set<String> roomSet = allocatedRooms.get(roomType);
 
-            int available = inventory.getAvailability(roomType);
+            if (!roomSet.contains(roomId)) {
+                roomSet.add(roomId);
+                inventory.decrementAvailability(roomType);
 
-            if (available > 0) {
-
-                String roomId = roomType.replace(" ", "").substring(0,2).toUpperCase() + roomCounter;
-                roomCounter++;
-
-                allocatedRooms.putIfAbsent(roomType, new HashSet<>());
-                Set<String> roomSet = allocatedRooms.get(roomType);
-
-                if (!roomSet.contains(roomId)) {
-                    roomSet.add(roomId);
-                    inventory.decrementAvailability(roomType);
-
-                    System.out.println("Reservation Confirmed for " + request.guestName);
-                    System.out.println("Room Type: " + roomType);
-                    System.out.println("Allocated Room ID: " + roomId);
-                    System.out.println();
-                }
-
-            } else {
-                System.out.println("Reservation Failed for " + request.guestName + " (No rooms available for " + roomType + ")");
-                System.out.println();
+                System.out.println("Reservation Confirmed for " + request.guestName);
+                System.out.println("Room Type: " + roomType);
+                System.out.println("Allocated Room ID: " + roomId);
+                return roomId;
             }
+        } else {
+            System.out.println("Reservation Failed for " + request.guestName + " (No rooms available for " + roomType + ")");
+            System.out.println();
+        }
+        return null;
+    }
+}
+
+// --- NEW CLASSES FOR USE CASE 7 ---
+
+class AddOnService {
+    String serviceName;
+    double cost;
+
+    AddOnService(String serviceName, double cost) {
+        this.serviceName = serviceName;
+        this.cost = cost;
+    }
+
+    @Override
+    public String toString() {
+        return serviceName + " (₹" + cost + ")";
+    }
+}
+
+class AddOnServiceManager {
+    // Map<String, List<AddOnService>> maps Reservation ID to multiple services
+    private final Map<String, List<AddOnService>> reservationServices;
+
+    AddOnServiceManager() {
+        this.reservationServices = new HashMap<>();
+    }
+
+    void addServiceToReservation(String roomId, AddOnService service) {
+        reservationServices.putIfAbsent(roomId, new ArrayList<>());
+        reservationServices.get(roomId).add(service);
+    }
+
+    void displayServicesForReservation(String roomId) {
+        List<AddOnService> services = reservationServices.get(roomId);
+        if (services != null && !services.isEmpty()) {
+            System.out.println("Add-on Services for Room " + roomId + ":");
+            double totalExtra = 0;
+            for (AddOnService s : services) {
+                System.out.println(" - " + s);
+                totalExtra += s.cost;
+            }
+            System.out.println("Total Additional Cost for Services: ₹" + totalExtra);
+            System.out.println();
         }
     }
 }
